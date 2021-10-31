@@ -1,6 +1,7 @@
 package me.fetsh.geekbrains.pd.interactor.main
 
 import io.reactivex.Observable
+import io.reactivex.Single
 import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
 import me.fetsh.geekbrains.pd.model.DataModel
@@ -11,19 +12,25 @@ class MainInteractor(
 ) : Contract.Interactor<RemoteData> {
 
     override fun getData(word: String, isRemoteSource: Boolean): Observable<RemoteData> {
-        return if (isRemoteSource) {
-            remoteRepository.getData(word).map { result ->
-                result.fold(
-                    { success -> RemoteData.Success(success) },
-                    { failure -> RemoteData.Error(failure) }
-                )
+        return when {
+            word.isBlank() -> {
+                Single.just(RemoteData.Initial as RemoteData).toObservable()
             }
-        } else {
-            localRepository.getData(word).map { result ->
-                result.fold(
-                    { success -> RemoteData.Success(success) },
-                    { failure -> RemoteData.Error(failure) }
-                )
+            isRemoteSource -> {
+                remoteRepository.getData(word).map { result ->
+                    result.fold(
+                        { success -> RemoteData.Success(success) },
+                        { failure -> RemoteData.Error(failure) }
+                    )
+                }
+            }
+            else -> {
+                localRepository.getData(word).map { result ->
+                    result.fold(
+                        { success -> RemoteData.Success(success) },
+                        { failure -> RemoteData.Error(failure) }
+                    )
+                }
             }
         }
     }

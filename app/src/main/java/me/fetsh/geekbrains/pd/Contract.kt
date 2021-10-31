@@ -13,26 +13,11 @@ sealed interface RemoteData {
 }
 
 interface Contract {
-    interface View {
-        fun renderData(data: RemoteData)
-    }
-
-    interface Presenter<T : RemoteData, V : View> {
-        fun attachView(view: V)
-        fun detachView(view: V)
-        fun getData(word: String, isOnline: Boolean)
-    }
-
-
     interface Interactor<T> {
         fun getData(word: String, isRemoteSource: Boolean): Observable<T>
     }
 
     interface Repository<T> {
         fun getData(word: String): Observable<Result<List<DataModel>, FuelError>>
-    }
-
-    interface ListViewPresenter {
-        fun setItems(items: List<DataModel>)
     }
 }

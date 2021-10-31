@@ -1,151 +1,166 @@
 package me.fetsh.geekbrains.pd.ui.main
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.widget.TextView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import klaster.Klaster
-import me.fetsh.geekbrains.pd.Contract
-import me.fetsh.geekbrains.pd.R
+import androidx.activity.compose.setContent
+import androidx.activity.viewModels
+import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import me.fetsh.geekbrains.pd.RemoteData
-import me.fetsh.geekbrains.pd.databinding.ActivityMainBinding
 import me.fetsh.geekbrains.pd.model.DataModel
-import me.fetsh.geekbrains.pd.ui.BaseActivity
+import me.fetsh.geekbrains.pd.model.Meaning
+import me.fetsh.geekbrains.pd.model.Translation
+import me.fetsh.geekbrains.pd.ui.theme.DarkGray
+import me.fetsh.geekbrains.pd.ui.theme.MyApplicationTheme
+import me.fetsh.geekbrains.pd.ui.theme.TextMain
+import me.fetsh.geekbrains.pd.ui.theme.Typography
 
-class MainActivity : BaseActivity<RemoteData>() {
+class MainActivity : AppCompatActivity() {
 
-    private lateinit var binding: ActivityMainBinding
-
-    private lateinit var adapter: RecyclerView.Adapter<*>
-    private lateinit var listViewPresenter: Contract.ListViewPresenter
-
-    override fun createPresenter(): Contract.Presenter<RemoteData, Contract.View> {
-        return MainPresenter()
-    }
+    private val mainViewModel by viewModels<MainViewModel>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        binding.searchFab.setOnClickListener {
-            val searchDialogFragment = SearchDialogFragment.newInstance()
-            searchDialogFragment.setOnSearchClickListener(object :
-                SearchDialogFragment.OnSearchClickListener {
-                override fun onClick(searchWord: String) {
-                    presenter.getData(searchWord, true)
+        setContent {
+            MyApplicationTheme {
+                Surface {
+                    SearchWordScreen(mainViewModel)
                 }
-            })
-            searchDialogFragment.show(supportFragmentManager, BOTTOM_SHEET_FRAGMENT_DIALOG_TAG)
-        }
-
-        binding.mainActivityRecyclerview.layoutManager = LinearLayoutManager(applicationContext)
-
-        val adapterWithLVP = createAdapter(layoutInflater) {}
-        adapter = adapterWithLVP.first
-        listViewPresenter = adapterWithLVP.second
-        binding.mainActivityRecyclerview.adapter = adapter
-    }
-
-    private fun createAdapter(
-        layoutInflater: LayoutInflater,
-        onItemClick: (DataModel) -> Unit
-    ): Pair<RecyclerView.Adapter<*>, Contract.ListViewPresenter> {
-        var dataModels: List<DataModel> = emptyList()
-
-        val adapter = Klaster.get()
-            .itemCount { dataModels.size }
-            .view(R.layout.item_word, layoutInflater)
-            .bind { position ->
-                val dataModel = dataModels[position]
-                itemView.findViewById<TextView>(R.id.header_textview_recycler_item).text = dataModel.query
-                itemView.findViewById<TextView>(R.id.description_textview_recycler_item).text =
-                    dataModel.meanings.firstOrNull()?.translation?.text
-                itemView.setOnClickListener { onItemClick(dataModel) }
-            }
-            .build()
-
-        val listViewPresenter = object : Contract.ListViewPresenter {
-            override fun setItems(items: List<DataModel>) {
-                dataModels = items
-                adapter.notifyDataSetChanged()
             }
         }
-
-        return adapter to listViewPresenter
     }
+}
 
-    override fun renderData(remoteData: RemoteData) {
-        when (remoteData) {
-            is RemoteData.Success -> {
-                val dataModels = remoteData.data
-                if (dataModels.isEmpty()) {
-                    showErrorScreen(getString(R.string.empty_server_response_on_success))
-                } else {
-                    showViewSuccess()
-                    listViewPresenter.setItems(dataModels)
-                }
+
+
+@Composable
+fun WordItem(word: DataModel){
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                val strokeWidth = 1.dp.value * density
+                val y = size.height - strokeWidth / 2
+                drawLine(
+                    Color.LightGray,
+                    Offset(0f, y),
+                    Offset(size.width, y),
+                    strokeWidth
+                )
             }
-            is RemoteData.Loading,  -> {
-                showViewLoading()
-                if (remoteData.progress != null) {
-                    binding.progressBarHorizontal.visibility = View.VISIBLE
-                    binding.progressBarRound.visibility = View.GONE
-                    binding.progressBarHorizontal.progress = remoteData.progress
-                } else {
-                    binding.progressBarHorizontal.visibility = View.GONE
-                    binding.progressBarRound.visibility = View.VISIBLE
-                }
-            }
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 15.dp, vertical = 10.dp)) {
+            Text(
+                text = word.query,
+                maxLines = 1,
+                style = Typography.h3,
+                color = DarkGray
+            )
+            Text(
+                text = word.meanings.firstOrNull()?.translation?.text ?: "No translation",
+                maxLines = 1,
+                color = TextMain,
+
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun WordItemPreview() {
+    val word = DataModel(
+        "help",
+        listOf(
+            Meaning(
+                translation = Translation(text = "Hello"),
+                imageUrl = ""
+            )
+        )
+    )
+    WordItem(word)
+}
+
+
+@Composable
+private fun SearchWordScreen(viewModel: MainViewModel) {
+    val words : RemoteData by viewModel.words.observeAsState(RemoteData.Initial)
+    val query : String by viewModel.query.observeAsState("")
+    Column {
+        Surface(color = MaterialTheme.colors.primary, modifier = Modifier.fillMaxWidth()) {
+            SearchInput(text = query, viewModel::setQuery)
+        }
+        when(words) {
             is RemoteData.Error -> {
-                showErrorScreen(remoteData.t.message)
+                Text(text = (words as RemoteData.Error).t.message ?: "Error")
             }
             RemoteData.Initial -> {
-                showViewInitial()
+                Text(text = "Not asked")
+            }
+            is RemoteData.Loading -> {
+                Text(text = "Loading")
+            }
+            is RemoteData.Success -> {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    (words as RemoteData.Success).data.map { dataModel ->
+                        WordItem(word = dataModel)
+                    }
+                }
             }
         }
     }
+}
 
-    private fun showViewInitial() {
-        binding.initialTextview.text = getString(R.string.initial_message)
-        binding.initialTextview.visibility = View.VISIBLE
-        binding.mainActivityRecyclerview.visibility = View.GONE
-        binding.successLinearLayout.visibility = View.VISIBLE
-        binding.loadingFrameLayout.visibility = View.GONE
-        binding.errorLinearLayout.visibility = View.GONE
+@Composable
+fun SearchInput(text: String, onTextChange: (String) -> Unit) {
+    Box(modifier = Modifier.padding(10.dp)) {
+        SearchInputText(
+            text = text,
+            onTextChange = onTextChange,
+            modifier =
+            Modifier
+                .background(MaterialTheme.colors.onPrimary)
+                .fillMaxWidth()
+        )
     }
+}
 
-    private fun showErrorScreen(error: String?) {
-        showViewError()
-        binding.errorTextview.text = error ?: getString(R.string.undefined_error)
-        binding.reloadButton.setOnClickListener {
-            presenter.getData("hi", true)
-        }
-    }
-
-    private fun showViewSuccess() {
-        binding.initialTextview.visibility = View.GONE
-        binding.successLinearLayout.visibility = View.VISIBLE
-        binding.loadingFrameLayout.visibility = View.GONE
-        binding.errorLinearLayout.visibility = View.GONE
-    }
-
-    private fun showViewLoading() {
-        binding.successLinearLayout.visibility = View.GONE
-        binding.loadingFrameLayout.visibility = View.VISIBLE
-        binding.errorLinearLayout.visibility = View.GONE
-    }
-
-    private fun showViewError() {
-        binding.successLinearLayout.visibility = View.GONE
-        binding.loadingFrameLayout.visibility = View.GONE
-        binding.errorLinearLayout.visibility = View.VISIBLE
-    }
-
-    companion object {
-
-        private const val BOTTOM_SHEET_FRAGMENT_DIALOG_TAG =
-            "74a54328-5d62-46bf-ab6b-cbf5fgt0-092395"
-    }
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun SearchInputText(
+    text: String,
+    onTextChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    onImeAction: () -> Unit = {}
+) {
+    val keyboardController = LocalSoftwareKeyboardController.current
+    TextField(
+        value = text,
+        onValueChange = onTextChange,
+        colors = TextFieldDefaults.textFieldColors(backgroundColor = Color.Transparent, textColor = MaterialTheme.colors.primary),
+        maxLines = 1,
+        keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = {
+            onImeAction()
+            keyboardController?.hide()
+        }),
+        modifier = modifier
+    )
 }
