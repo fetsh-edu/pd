@@ -1,25 +1,20 @@
 package me.fetsh.geekbrains.pd.ui.main
 
 import androidx.lifecycle.LiveData
-import androidx.lifecycle.LiveDataReactiveStreams
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
-import io.reactivex.BackpressureStrategy
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
+import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
-import me.fetsh.geekbrains.pd.interactor.main.MainInteractor
-import me.fetsh.geekbrains.pd.model.remote.RemoteRepository
+import javax.inject.Inject
 
-class MainViewModel : ViewModel() {
+class MainViewModel @Inject constructor(
+    private val interactor: Contract.Interactor<RemoteData>
+) : ViewModel() {
 
     private val compositeDisposable = CompositeDisposable()
-    private val interactor: MainInteractor = MainInteractor(
-        RemoteRepository(),
-        RemoteRepository()
-    )
 
     private val _words : MutableLiveData<RemoteData> = MutableLiveData(RemoteData.Initial)
     val words : LiveData<RemoteData> = _words

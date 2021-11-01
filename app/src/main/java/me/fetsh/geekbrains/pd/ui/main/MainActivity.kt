@@ -2,7 +2,6 @@ package me.fetsh.geekbrains.pd.ui.main
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -23,6 +22,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import dagger.android.AndroidInjection
 import me.fetsh.geekbrains.pd.RemoteData
 import me.fetsh.geekbrains.pd.model.DataModel
 import me.fetsh.geekbrains.pd.model.Meaning
@@ -31,13 +32,22 @@ import me.fetsh.geekbrains.pd.ui.theme.DarkGray
 import me.fetsh.geekbrains.pd.ui.theme.MyApplicationTheme
 import me.fetsh.geekbrains.pd.ui.theme.TextMain
 import me.fetsh.geekbrains.pd.ui.theme.Typography
+import javax.inject.Inject
 
 class MainActivity : AppCompatActivity() {
 
-    private val mainViewModel by viewModels<MainViewModel>()
+    @Inject
+    lateinit var viewModelFactory: ViewModelProvider.Factory
+
+//    private val mainViewModel by viewModels<MainViewModel>()
+
+    private val mainViewModel by lazy {
+        viewModelFactory.create(MainViewModel::class.java)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AndroidInjection.inject(this)
         setContent {
             MyApplicationTheme {
                 Surface {
