@@ -12,25 +12,20 @@ class MainInteractor(
 ) : Contract.Interactor<RemoteData> {
 
     override fun getData(word: String, isRemoteSource: Boolean): Observable<RemoteData> {
-        return when {
-            word.isBlank() -> {
-                Single.just(RemoteData.Initial as RemoteData).toObservable()
+        return if (isRemoteSource) {
+            remoteRepository.getData(word).map { result ->
+                result.fold(
+                    { success -> RemoteData.Success(success) },
+                    { failure -> RemoteData.Error(failure) }
+                )
             }
-            isRemoteSource -> {
-                remoteRepository.getData(word).map { result ->
-                    result.fold(
-                        { success -> RemoteData.Success(success) },
-                        { failure -> RemoteData.Error(failure) }
-                    )
-                }
-            }
-            else -> {
-                localRepository.getData(word).map { result ->
-                    result.fold(
-                        { success -> RemoteData.Success(success) },
-                        { failure -> RemoteData.Error(failure) }
-                    )
-                }
+        }
+        else {
+            localRepository.getData(word).map { result ->
+                result.fold(
+                    { success -> RemoteData.Success(success) },
+                    { failure -> RemoteData.Error(failure) }
+                )
             }
         }
     }

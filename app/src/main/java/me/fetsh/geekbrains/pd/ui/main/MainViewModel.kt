@@ -1,8 +1,11 @@
 package me.fetsh.geekbrains.pd.ui.main
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.LiveDataReactiveStreams
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
+import io.reactivex.BackpressureStrategy
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
@@ -25,8 +28,12 @@ class MainViewModel : ViewModel() {
     val query : LiveData<String> = _query
 
     fun setQuery(text: String) {
+        if (text.isBlank()) {
+            _words.postValue(RemoteData.Initial)
+        } else if (_query.value != text ){
+            search(text, true)
+        }
         _query.value = text
-        search(text, true)
     }
 
     private fun search(word: String, isOnline: Boolean) {
