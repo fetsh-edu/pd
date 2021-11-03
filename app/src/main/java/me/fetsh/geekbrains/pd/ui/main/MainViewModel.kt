@@ -8,9 +8,8 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.schedulers.Schedulers
 import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
-import javax.inject.Inject
 
-class MainViewModel @Inject constructor(
+class MainViewModel(
     private val interactor: Contract.Interactor<RemoteData>
 ) : ViewModel() {
 

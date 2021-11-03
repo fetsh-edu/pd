@@ -1,13 +1,11 @@
 package me.fetsh.geekbrains.pd.interactor.main
 
 import io.reactivex.Observable
-import io.reactivex.Single
 import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
 import me.fetsh.geekbrains.pd.model.DataModel
-import javax.inject.Inject
 
-class MainInteractor @Inject constructor(
+class MainInteractor(
     private val remoteRepository: Contract.Repository<List<DataModel>>,
     private val localRepository: Contract.Repository<List<DataModel>>
 ) : Contract.Interactor<RemoteData> {
