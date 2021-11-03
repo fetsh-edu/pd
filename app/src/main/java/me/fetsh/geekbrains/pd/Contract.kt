@@ -2,7 +2,6 @@ package me.fetsh.geekbrains.pd
 
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.result.Result
-import io.reactivex.Observable
 import me.fetsh.geekbrains.pd.model.DataModel
 
 sealed interface RemoteData {
@@ -14,10 +13,10 @@ sealed interface RemoteData {
 
 interface Contract {
     interface Interactor<T> {
-        fun getData(word: String, isRemoteSource: Boolean): Observable<T>
+        suspend fun getData(word: String, isRemoteSource: Boolean): T
     }
 
     interface Repository<T> {
-        fun getData(word: String): Observable<Result<List<DataModel>, FuelError>>
+        suspend fun getData(word: String): Result<T, FuelError>
     }
 }

@@ -3,9 +3,10 @@ package me.fetsh.geekbrains.pd.ui.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.schedulers.Schedulers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
 
@@ -13,7 +14,9 @@ class MainViewModel(
     private val interactor: Contract.Interactor<RemoteData>
 ) : ViewModel() {
 
-    private val compositeDisposable = CompositeDisposable()
+    private val scope = CoroutineScope(
+        Dispatchers.Main + SupervisorJob()
+    )
 
     private val _words : MutableLiveData<RemoteData> = MutableLiveData(RemoteData.Initial)
     val words : LiveData<RemoteData> = _words
@@ -31,20 +34,9 @@ class MainViewModel(
     }
 
     private fun search(word: String, isOnline: Boolean) {
-        compositeDisposable.add(interactor.getData(word, isOnline)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .doOnSubscribe {
-                _words.postValue(RemoteData.Loading(null))
-            }
-            .subscribe {
-                _words.postValue(it)
-            }
-        )
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        compositeDisposable.dispose()
+        scope.launch {
+            _words.postValue(RemoteData.Loading(null))
+            _words.postValue(interactor.getData(word, isOnline))
+        }
     }
 }
