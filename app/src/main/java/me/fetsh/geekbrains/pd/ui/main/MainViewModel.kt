@@ -3,10 +3,7 @@ package me.fetsh.geekbrains.pd.ui.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import me.fetsh.geekbrains.pd.Contract
 import me.fetsh.geekbrains.pd.RemoteData
 
@@ -38,5 +35,10 @@ class MainViewModel(
             _words.postValue(RemoteData.Loading(null))
             _words.postValue(interactor.getData(word, isOnline))
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        scope.cancel()
     }
 }
