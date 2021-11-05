@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -22,6 +23,8 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import me.fetsh.geekbrains.pd.RemoteData
 import me.fetsh.geekbrains.pd.model.DataModel
 import me.fetsh.geekbrains.pd.model.Meaning
@@ -32,10 +35,10 @@ import me.fetsh.geekbrains.pd.ui.theme.TextMain
 import me.fetsh.geekbrains.pd.ui.theme.Typography
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 class MainActivity : AppCompatActivity() {
 
-
-//    private val mainViewModel by viewModels<MainViewModel>()
     private val mainViewModel : MainViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,10 +104,12 @@ fun WordItemPreview() {
 }
 
 
+@FlowPreview
+@ExperimentalCoroutinesApi
 @Composable
 private fun SearchWordScreen(viewModel: MainViewModel) {
-    val words : RemoteData by viewModel.words.observeAsState(RemoteData.Initial)
-    val query : String by viewModel.query.observeAsState("")
+    val words : RemoteData by viewModel.words.collectAsState(RemoteData.Initial)
+    val query : String by viewModel.query.collectAsState()
     Column {
         Surface(color = MaterialTheme.colors.primary, modifier = Modifier.fillMaxWidth()) {
             SearchInput(text = query, viewModel::setQuery)
@@ -120,9 +125,14 @@ private fun SearchWordScreen(viewModel: MainViewModel) {
                 Text(text = "Loading")
             }
             is RemoteData.Success -> {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    (words as RemoteData.Success).data.map { dataModel ->
-                        WordItem(word = dataModel)
+                val words = words as RemoteData.Success
+                if (words.data.isEmpty()){
+                    Text(text = "Nothing is found")
+                } else {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        words.data.map { dataModel ->
+                            WordItem(word = dataModel)
+                        }
                     }
                 }
             }
