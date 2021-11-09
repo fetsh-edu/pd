@@ -6,7 +6,14 @@ import com.github.kittinunf.forge.util.create
 data class DataModel(
     val query: String,
     val meanings: List<Meaning>
-)
+) {
+    fun translation() : String? {
+        return meanings.firstOrNull()?.translation?.text
+    }
+    fun imageUrl() : String? {
+        return meanings.firstOrNull()?.imageUrl?.let { url -> "https://$url" }
+    }
+}
 
 data class Meaning(
     val translation: Translation,
